@@ -1,13 +1,19 @@
-﻿# general information
+﻿# General information
 
 The 5.1.4 task of profile NPT of NTI Contest 2020.  
 Library made by team "GPU с функцией NNN"  
-Task division in team and some notes can be viewed at the end of readme
+Task division in team and some notes can be viewed at the end of readme.
 
 # Documentation
 
 class **Stepper**
-- *constructor*()
+- `*constructor*(*int* pin_dir, *int* pin_step, *int* pin_m1, *int* pin_m2, *int* pin_m3)`
+- `initLinear(*int* mm_per_rev)`  
+`initLinear(*int* n_teeth, *int* tooth_width)`
+- `setSPR(*int* new_spr)`
+- `moveStep(*long* steps)`
+- `moveAngle(*long* deg)`
+- `setDivision(*int* div)`
 
 ____
 
@@ -22,8 +28,7 @@ Task division:
 4. Linear motion in absolute and relative coordinate system - Kirill
 5. Set current position of motor - Kirill
 6. Set acceleration - Kirill
-  
 7. Examples - Pavel
 8. Documentation - both
 
-Library is being tested with motor NEMA17 and driver DRV8825.
+Library is being tested with motor 42BYGHW609 and driver DRV8825.
