@@ -1,6 +1,8 @@
 #include "StepperNTI.h"
 #include <cmath>
 
+#define MM_TO_ST(mm) mm / mm_per_turnover * steps_per_turnover
+
 Stepper::Stepper(int pin_dir, int pin_step, int pin_m1, int pin_m2, int pin_m3)
 {
     // save pins
@@ -137,4 +139,10 @@ void Stepper::moveLinearAbs(float mm)
     float mm_from_zero = pos_linear / 32 / steps_per_turnover * mm_per_turnover;
 
     moveLinearRel(mm - mm_from_zero);
+}
+
+
+void Stepper::makePositionOrigin(float mm)
+{
+    linear_pos = MM_TO_ST(mm) * 32;
 }
