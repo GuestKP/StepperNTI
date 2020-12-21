@@ -34,6 +34,7 @@ public:
     void moveAngleAbs(float angle);
     void moveLinearRel(float mm);
     void moveLinearAbs(float mm);
+    void makePositionOrigin(float mm);
 };
 
 #endif
