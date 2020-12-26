@@ -42,7 +42,7 @@ bool Stepper::setSpeed(int new_spd)
 	if((0 >= new_spd)/* || (new_spd > 50000)*/)
 		return false;
 		
-	speed = new_spd;
+	speed = new_spd*60*steps_per_revolution/1000.;
 	return true;
 }
 
@@ -127,7 +127,7 @@ void Stepper::moveStepsRel(float steps)
 		tmp_k = 16/divide_koeff, n16, nk;
     
     // set move direction
-    digitalWrite(pin_dir, ((steps >= 0) == move_side));
+    digitalWrite(pin_dir, (steps >= 0);
     
 	// save position
     pos_linear += msteps_k * 16 / divide_koeff;

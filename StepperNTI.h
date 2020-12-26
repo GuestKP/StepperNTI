@@ -8,7 +8,7 @@
 #endif
 #include "math.h"
 
-#define DEFAULT_SPEED 1000
+#define DEFAULT_SPEED 1200
 #define DEFAULT_SPR 200
 #define AT_SIMPLE 0
 #define AT_FIRST_SIDE 1
@@ -26,7 +26,6 @@ private:
     // angle and linear position units is STEPS*32, due to loss of float numbers
     long pos_linear = 0;
     float mm_per_revolution = -1, pos_angle = 0;
-    bool move_side = true;
     
     void step(int t);
     void accelerate(int n32, int nadd, int hst, bool acc);
