@@ -6,8 +6,9 @@
 #else
 	#include "WProgram.h"
 #endif
+#include "math.h"
 
-#define DEFAULT_SPEED 1100
+#define DEFAULT_SPEED 1000
 #define DEFAULT_SPR 200
 #define AT_SIMPLE 0
 #define AT_FIRST_SIDE 1
@@ -18,14 +19,17 @@ class Stepper
 {
 private:
     int pin_dir, pin_step, pin_m1, pin_m2, pin_m3,
-            steps_per_turnover = DEFAULT_SPR,
+            steps_per_revolution = DEFAULT_SPR,
             speed = DEFAULT_SPEED,
-            mult_koeff = 32, divide_koeff = 1,
-            acceleration = 0;
+            acceleration = 0,
+            mult_koeff = 32, divide_koeff = 1;
     // angle and linear position units is STEPS*32, due to loss of float numbers
     long pos_linear = 0;
-    float mm_per_turnover = -1, pos_angle = 0;
-    bool move_side = true, linear_initialised = false;
+    float mm_per_revolution = -1, pos_angle = 0;
+    bool move_side = true;
+    
+    void step(int t);
+    void accelerate(int n32, int nadd, int hst, bool acc);
 
 public:
     Stepper(int pin_dir, int pin_step, int pin_m1, int pin_m2, int pin_m3);
