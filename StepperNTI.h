@@ -23,7 +23,7 @@ private:
             speed = DEFAULT_SPEED,
             acceleration = 0,
             mult_koeff = 32, divide_koeff = 1;
-    // angle and linear position units is STEPS*32, due to loss of float numbers
+    // angle and linear position units is STEPS*16, due to loss of float numbers
     long pos_linear = 0;
     float mm_per_revolution = -1, pos_angle = 0;
     
@@ -31,7 +31,7 @@ private:
     void accelerate(int n32, int nadd, int hst, bool acc);
 
 public:
-    Stepper(int pin_dir, int pin_step, int pin_m1, int pin_m2, int pin_m3);
+    Stepper(int pin_dir, int pin_step, int pin_ms1, int pin_ms2, int pin_ms3);
     
     bool setParams(int new_spr, float mpr);
     bool setParams(int new_spr, int n_teeth, float tooth_width);

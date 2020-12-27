@@ -1,0 +1,12 @@
+Stepper	KEYWORD1
+setParams	KEYWORD2
+setDivision	KEYWORD2
+setSpeed	KEYWORD2
+setAcceleration	KEYWORD2
+rewritePosition	KEYWORD2
+moveStepsRel	KEYWORD2
+moveStepsAbs	KEYWORD2
+moveAngleRel	KEYWORD2
+moveAngleAbs	KEYWORD2
+moveLinearRel	KEYWORD2
+moveLinearAbs	KEYWORD2

@@ -42,7 +42,7 @@ bool Stepper::setSpeed(int new_spd)
 	if((0 >= new_spd)/* || (new_spd > 50000)*/)
 		return false;
 		
-	speed = new_spd*60*steps_per_revolution/1000.;
+	speed = new_spd*60.*float(steps_per_revolution)/1000.;
 	return true;
 }
 
@@ -71,9 +71,9 @@ bool Stepper::setDivision(int div)
     for(; div>1; div/=2) n += 1;
     
     // write bits of 'n'
-    digitalWrite(pin_m1, n & 0x1);
+    digitalWrite(pin_m1, n & 0x4);
     digitalWrite(pin_m2, n & 0x2);
-    digitalWrite(pin_m3, n & 0x4);
+    digitalWrite(pin_m3, n & 0x1);
 
     return true;
 }
@@ -107,36 +107,44 @@ void Stepper::accelerate(int n16, int nadd, int hst, bool acc)
 		for(int i = 0; i < nadd; i++)
 			step(hst);
 	}
-	for(int i = acc ? 1 : n16; i < acc ? (n16+1) : 0; acc ? i++ : i--)
-		step(hst);
+	
+	//for(int i = acc?1:n16; i < acc?(n16+1):0; acc?i++:i--)
+	for (int i=0; i<n16; i++)
+	{
+		float k=acc?(float (i+1)): (float(n16-i));
+		int x = 1000000./32./sqrt(float(acceleration)*k);
+		step(x);
+	}
+	
 	if(acc)
 	{
 		for(int i = 0; i < nadd; i++)
 			step(hst);
 	}
-	setDivision(divide_koeff);
+	setDivision(tmpdiv);
 }
 
 
 void Stepper::moveStepsRel(float steps)
 {
     // "length" with current divide_koeff
-    int msteps_k = abs(steps) * divide_koeff,
+    int msteps_k = steps * divide_koeff,
     // time for half-microstep with current divide_koeff
-		cur_hst = 1000000/(16*2*divide_koeff*speed),
+		cur_hst = 1000000/(2.*float(divide_koeff*speed)),
 		tmp_k = 16/divide_koeff, n16, nk;
-    
-    // set move direction
-    digitalWrite(pin_dir, (steps >= 0);
-    
 	// save position
     pos_linear += msteps_k * 16 / divide_koeff;
-    pos_angle = pos_angle + msteps_k / divide_koeff;
+    pos_angle = pos_angle + msteps_k * 360. / (divide_koeff * float(steps_per_revolution));
+    for(;pos_angle>=360;pos_angle-=360);for(;pos_angle<0;pos_angle+=360);
+    msteps_k = abs(msteps_k);
 
+    // set move direction
+    digitalWrite(pin_dir, steps >= 0);
+    
     // acceleration
     if(acceleration)
     {
-    	n16 = speed*speed/acceleration;
+    	n16 = float(speed)*float(speed)/float(acceleration);
     	nk = ceil(n16/float(tmp_k));
     	if(2*nk >= msteps_k)
     	{
@@ -145,6 +153,7 @@ void Stepper::moveStepsRel(float steps)
 			accelerate(n16, 0, 0, true);
     		
     		n16 += msteps_k%2 * tmp_k;
+    		nk = 0;
     		msteps_k = 0;
 		}
 		else
@@ -173,7 +182,7 @@ void Stepper::moveStepsAbs(float steps)
 //																													angle
 void Stepper::moveAngleRel(float angle)
 {
-	moveStepsRel(steps_per_revolution * angle / 360.);
+	moveStepsRel(float(steps_per_revolution) * angle / 360.);
 }
 
 void Stepper::moveAngleAbs(float angle, int type = AT_SHORTEST)
@@ -191,7 +200,7 @@ void Stepper::moveAngleAbs(float angle, int type = AT_SHORTEST)
 			angle -= (angle > 0 ? 360 : 0);
 			break;
 		case AT_SHORTEST:
-			angle + (angle < -180 ? 360 : 0) - (angle > 180 ? 360 : 0);
+			angle += (angle < -180 ? 360 : 0) - (angle > 180 ? 360 : 0);
 			break;
 	}
 	moveAngleRel(angle);
