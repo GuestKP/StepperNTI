@@ -1,6 +1,5 @@
 #include "StepperNTI.h"
 
-#define MM_TO_ST(mm) mm / mm_per_revolution * float(steps_per_revolution)
 
 //																													construct
 Stepper::Stepper(int pin_dir, int pin_step, int pin_ms1, int pin_ms2, int pin_ms3)
@@ -20,12 +19,13 @@ Stepper::Stepper(int pin_dir, int pin_step, int pin_ms1, int pin_ms2, int pin_ms
 }
 
 
-//																													set
 bool Stepper::setParams(int new_spr, float new_mpr)
 {
+	//check if params isn't correct
     if ((new_spr <= 0) || (new_mpr <= 0))
     	return false;
     
+    // save
     steps_per_revolution = new_spr;
     mm_per_revolution = new_mpr;
     return true;
@@ -39,6 +39,7 @@ bool Stepper::setParams(int new_spr, int n_teeth, float tooth_width)
 
 bool Stepper::setSpeed(int new_spd)
 {
+	//check if param isn't correct
 	if((0 >= new_spd)/* || (new_spd > 50000)*/)
 		return false;
 		
@@ -49,6 +50,7 @@ bool Stepper::setSpeed(int new_spd)
 
 bool Stepper::setAcceleration(int new_acc)
 {
+	//check if param isn't correct
 	if((0 > new_acc)/* || (new_acc > 50000)*/)
 		return false;
 		
@@ -59,9 +61,11 @@ bool Stepper::setAcceleration(int new_acc)
 
 bool Stepper::setDivision(int div)
 {
+	//check if param isn't correct
     if (div != 1 && div != 2 && div != 4 && div != 8 && div != 16 /*&& div != 32*/)
         return false;
-
+	
+	// save coefficient
     divide_koeff = div;
 
     // power levels on pins M1, M2, M3 is binary representation
@@ -79,19 +83,20 @@ bool Stepper::setDivision(int div)
 }
 
 
-//																													rewrite
 void Stepper::rewritePosition(float mm)
 {
+	// if Linear motion params aren't initialised
     if (mm_per_revolution < 0)
         return;
     
+    // convert MM to microsteps(16)
     pos_linear = MM_TO_ST(mm) * 16;
 }
 
 
-//																													steps
 void Stepper::step(int t)
 {
+	// make step
     digitalWrite(pin_step, 1);
     delayMicroseconds(t);
     digitalWrite(pin_step, 0);
@@ -100,27 +105,32 @@ void Stepper::step(int t)
 
 void Stepper::accelerate(int n16, int nadd, int hst, bool acc)
 {
+	// set maximum division for acceleration
 	int tmpdiv = divide_koeff;
 	setDivision(16);
+	
+	//if decelerate and have any steps in full-speed
 	if(!acc)
 	{
 		for(int i = 0; i < nadd; i++)
 			step(hst);
 	}
 	
-	//for(int i = acc?1:n16; i < acc?(n16+1):0; acc?i++:i--)
+	// accelerate/decelerate
 	for (int i=0; i<n16; i++)
 	{
-		float k=acc?(float (i+1)): (float(n16-i));
+		float k=acc?(float (i+1)):(float(n16-i));
 		int x = 1000000./32./sqrt(float(acceleration)*k);
 		step(x);
 	}
 	
+	//if accelerate and have any steps in full-speed
 	if(acc)
 	{
 		for(int i = 0; i < nadd; i++)
 			step(hst);
 	}
+	// reset division
 	setDivision(tmpdiv);
 }
 
@@ -132,10 +142,14 @@ void Stepper::moveStepsRel(float steps)
     // time for half-microstep with current divide_koeff
 		cur_hst = 1000000/(2.*float(divide_koeff*speed)),
 		tmp_k = 16/divide_koeff, n16, nk;
+	
 	// save position
     pos_linear += msteps_k * 16 / divide_koeff;
+    // save angle position
     pos_angle = pos_angle + msteps_k * 360. / (divide_koeff * float(steps_per_revolution));
+    // check that 0 <= angle < 360
     for(;pos_angle>=360;pos_angle-=360);for(;pos_angle<0;pos_angle+=360);
+    // get length
     msteps_k = abs(msteps_k);
 
     // set move direction
@@ -144,20 +158,29 @@ void Stepper::moveStepsRel(float steps)
     // acceleration
     if(acceleration)
     {
+    	// get number of microsteps(16)
     	n16 = float(speed)*float(speed)/float(acceleration);
+    	// get number of microsteps(divide_koeff) that contain
+    	// n16 microsteps(16)
     	nk = ceil(n16/float(tmp_k));
+    	
+    	// if length of acceleration and deceleration
+    	// less than move length (in microsteps(divide_koeff))
     	if(2*nk >= msteps_k)
     	{
+    		// half-move accelerate
     		n16 = msteps_k/2 * tmp_k;
     		
 			accelerate(n16, 0, 0, true);
     		
+    		// half-move + remainder decelerate
     		n16 += msteps_k%2 * tmp_k;
     		nk = 0;
     		msteps_k = 0;
 		}
 		else
 		{
+			// just accelerate
 			accelerate(n16, nk*tmp_k-n16, 0, true);
 			
 			msteps_k -= 2*nk;
@@ -175,18 +198,20 @@ void Stepper::moveStepsRel(float steps)
 
 void Stepper::moveStepsAbs(float steps)
 {
+	// convert absolute steps in relative steps
 	moveStepsRel(steps - pos_linear/16.);
 }
 
 
-//																													angle
 void Stepper::moveAngleRel(float angle)
 {
+	// convert relative angle in relative steps
 	moveStepsRel(float(steps_per_revolution) * angle / 360.);
 }
 
 void Stepper::moveAngleAbs(float angle, int type = AT_SHORTEST)
 {
+	// convert absolute angle in relative angle
 	angle -= pos_angle;
 	switch(type)
 	{
@@ -206,9 +231,9 @@ void Stepper::moveAngleAbs(float angle, int type = AT_SHORTEST)
 	moveAngleRel(angle);
 }
 
-//																													Linear
 void Stepper::moveLinearRel(float mm)
 {
+	// if Linear motion params aren't initialised
     if (mm_per_revolution < 0)
         return;
 
@@ -217,6 +242,7 @@ void Stepper::moveLinearRel(float mm)
 
 void Stepper::moveLinearAbs(float mm)
 {
+	// if Linear motion params aren't initialised
     if (mm_per_revolution < 0)
         return;
     

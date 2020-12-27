@@ -6,10 +6,14 @@
 #else
 	#include "WProgram.h"
 #endif
+
 #include "math.h"
+
+#define MM_TO_ST(mm) mm / mm_per_revolution * float(steps_per_revolution)
 
 #define DEFAULT_SPEED 1200
 #define DEFAULT_SPR 200
+
 #define AT_SIMPLE 0
 #define AT_FIRST_SIDE 1
 #define AT_SECOND_SIDE 2
@@ -41,12 +45,15 @@ public:
     
     void rewritePosition(float mm);
     
+    // By-step motion
     void moveStepsRel(float steps);
     void moveStepsAbs(float steps);
     
+    // Angle motion
     void moveAngleRel(float angle);
     void moveAngleAbs(float angle, int type = AT_SHORTEST);
     
+    // Linear motion
     void moveLinearRel(float mm);
     void moveLinearAbs(float mm);
 };
