@@ -12,7 +12,7 @@
 #define MM_TO_ST(mm) mm / mm_per_revolution * float(steps_per_revolution)
 
 #define DEFAULT_SPEED 1200
-#define DEFAULT_SPR 200
+// #define DEFAULT_SPR 200
 
 #define AT_SIMPLE 0
 #define AT_FIRST_SIDE 1
@@ -23,7 +23,7 @@ class Stepper
 {
 private:
     int pin_dir, pin_step, pin_m1, pin_m2, pin_m3,
-            steps_per_revolution = DEFAULT_SPR,
+            steps_per_revolution = -1,
             speed = DEFAULT_SPEED,
             acceleration = 0,
             mult_koeff = 32, divide_koeff = 1;
@@ -32,7 +32,7 @@ private:
     float mm_per_revolution = -1, pos_angle = 0;
     
     void step(int t);
-    void accelerate(int n32, int nadd, int hst, bool acc);
+    void accelerate(int n, bool acc);
 
 public:
     Stepper(int pin_dir, int pin_step, int pin_ms1, int pin_ms2, int pin_ms3);

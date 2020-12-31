@@ -1,7 +1,6 @@
 #include "StepperNTI.h"
 
 
-//																													construct
 Stepper::Stepper(int pin_dir, int pin_step, int pin_ms1, int pin_ms2, int pin_ms3)
 {
     // save pins
@@ -39,6 +38,11 @@ bool Stepper::setParams(int new_spr, int n_teeth, float tooth_width)
 
 bool Stepper::setSpeed(int new_spd)
 {
+	// if Linear motion params aren't initialised
+	// Don't do anything
+    if (mm_per_revolution < 0 || steps_per_revolution < 0)
+    	return;
+    
 	//check if param isn't correct
 	if((0 >= new_spd)/* || (new_spd > 50000)*/)
 		return false;
@@ -103,19 +107,8 @@ void Stepper::step(int t)
     delayMicroseconds(t);
 }
 
-void Stepper::accelerate(int n16, int nadd, int hst, bool acc)
+void Stepper::accelerate(int n, bool acc)
 {
-	// set maximum division for acceleration
-	int tmpdiv = divide_koeff;
-	setDivision(16);
-	
-	//if decelerate and have any steps in full-speed
-	if(!acc)
-	{
-		for(int i = 0; i < nadd; i++)
-			step(hst);
-	}
-	
 	// accelerate/decelerate
 	for (int i=0; i<n16; i++)
 	{
@@ -123,15 +116,6 @@ void Stepper::accelerate(int n16, int nadd, int hst, bool acc)
 		int x = 1000000./32./sqrt(float(acceleration)*k);
 		step(x);
 	}
-	
-	//if accelerate and have any steps in full-speed
-	if(acc)
-	{
-		for(int i = 0; i < nadd; i++)
-			step(hst);
-	}
-	// reset division
-	setDivision(tmpdiv);
 }
 
 
@@ -141,7 +125,7 @@ void Stepper::moveStepsRel(float steps)
     int msteps_k = steps * divide_koeff,
     // time for half-microstep with current divide_koeff
 		cur_hst = 1000000/(2.*float(divide_koeff*speed)),
-		tmp_k = 16/divide_koeff, n16, nk;
+		n;
 	
 	// save position
     pos_linear += msteps_k * 16 / divide_koeff;
@@ -158,32 +142,28 @@ void Stepper::moveStepsRel(float steps)
     // acceleration
     if(acceleration)
     {
-    	// get number of microsteps(16)
-    	n16 = float(speed)*float(speed)/float(acceleration);
-    	// get number of microsteps(divide_koeff) that contain
-    	// n16 microsteps(16)
-    	nk = ceil(n16/float(tmp_k));
+    	// get number of microsteps
+    	n = float(speed)*float(speed)/float(acceleration);
     	
     	// if length of acceleration and deceleration
     	// less than move length (in microsteps(divide_koeff))
-    	if(2*nk >= msteps_k)
+    	if(2*n >= msteps_k)
     	{
     		// half-move accelerate
-    		n16 = msteps_k/2 * tmp_k;
+    		n16 = msteps_k/2;
     		
-			accelerate(n16, 0, 0, true);
+			accelerate(n, true);
     		
-    		// half-move + remainder decelerate
-    		n16 += msteps_k%2 * tmp_k;
-    		nk = 0;
+    		// half-move + remainder decelerate (check if msteps_k % 2 = 1)
+    		n += msteps_k%2;
     		msteps_k = 0;
 		}
 		else
 		{
 			// just accelerate
-			accelerate(n16, nk*tmp_k-n16, 0, true);
+			accelerate(n, true);
 			
-			msteps_k -= 2*nk;
+			msteps_k -= 2*n;
 		}
 	}
 
@@ -193,7 +173,7 @@ void Stepper::moveStepsRel(float steps)
 
     // deceleration
     if(acceleration)
-		accelerate(n16, nk*tmp_k-n16, cur_hst, false);
+		accelerate(n, false);
 }
 
 void Stepper::moveStepsAbs(float steps)
@@ -205,12 +185,22 @@ void Stepper::moveStepsAbs(float steps)
 
 void Stepper::moveAngleRel(float angle)
 {
+	// if Angle motion params aren't initialised
+	// Don't do anything
+    if (steps_per_revolution < 0)
+        return;
+    
 	// convert relative angle in relative steps
 	moveStepsRel(float(steps_per_revolution) * angle / 360.);
 }
 
 void Stepper::moveAngleAbs(float angle, int type = AT_SHORTEST)
 {
+	// if Angle motion params aren't initialised
+	// Don't do anything
+    if (steps_per_revolution < 0)
+        return;
+    
 	// convert absolute angle in relative angle
 	angle -= pos_angle;
 	switch(type)
@@ -234,7 +224,8 @@ void Stepper::moveAngleAbs(float angle, int type = AT_SHORTEST)
 void Stepper::moveLinearRel(float mm)
 {
 	// if Linear motion params aren't initialised
-    if (mm_per_revolution < 0)
+	// Don't do anything
+    if (mm_per_revolution < 0 || steps_per_revolution < 0)
         return;
 
     moveStepsRel(MM_TO_ST(mm));
@@ -243,7 +234,8 @@ void Stepper::moveLinearRel(float mm)
 void Stepper::moveLinearAbs(float mm)
 {
 	// if Linear motion params aren't initialised
-    if (mm_per_revolution < 0)
+	// Don't do anything
+    if (mm_per_revolution < 0 || steps_per_revolution < 0)
         return;
     
     moveStepsAbs(MM_TO_ST(mm));
